@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Build and test artifacts
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated demo data and model outputs
+data/demo_*.csv
+outputs/*
+!outputs/.gitkeep

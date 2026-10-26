@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "traffic-qos-research-demo"
+version = "0.1.0"
+description = "Encrypted-flow classification and QoS-aware scheduling research demo"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24,<2.5", "pandas>=2.0", "scikit-learn>=1.3"]
+
+[project.optional-dependencies]
+cnn = ["tensorflow>=2.15"]
+pcap = ["scapy>=2.5"]
+dev = ["pytest>=7.4"]
+dashboard = ["streamlit>=1.38", "plotly>=5.20"]
+
+[project.scripts]
+traffic-qos = "traffic_qos.cli:main"
+traffic-qos-dashboard = "traffic_qos.dashboard:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
