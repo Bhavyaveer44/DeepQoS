@@ -43,6 +43,15 @@ def main() -> None:
     demo.add_argument("--bandwidth-mbps", type=float, default=12.0)
     demo.add_argument("--max-flows", type=int, default=30, help="Maximum flows to replay (balanced across classes)")
     demo.add_argument("--oracle-labels", action="store_true", help="Use dataset labels as perfect classifier upper bound")
+    sch = commands.add_parser("schedule", help="Apply QoS scheduling to YOUR flows (CSV or PCAP)")
+    sch.add_argument("--input", required=True)
+    sch.add_argument("--model", default="outputs/flow_classifier.joblib")
+    sch.add_argument("--output-dir", default="outputs/schedule")
+    sch.add_argument("--bandwidth-mbps", type=float, default=50.0)
+    sch.add_argument("--arrival", choices=["burst", "even", "random", "auto"], default="burst")
+    sch.add_argument("--window-s", type=float, default=10.0)
+    sch.add_argument("--pcap", action="store_true", help="Input is a PCAP/PCAPNG, not a flow CSV")
+    sch.add_argument("--idle-timeout", type=float, default=30.0)
     packet = commands.add_parser("extract", help="Extract flow features from packet-metadata CSV")
     packet.add_argument("--input", required=True)
     packet.add_argument("--output", default="data/flows.csv")
@@ -150,8 +159,22 @@ def _run(args: argparse.Namespace) -> None:
         requests = make_requests(frame)
         summary = save_comparison(requests, args.output_dir, args.bandwidth_mbps)
         print(json.dumps(summary, indent=2))
+    elif args.command == "schedule":
+        from .schedule_flows import run_schedule
+        source = args.input
+        if args.pcap:
+            source = str(Path(args.output_dir) / "_pcap_flows.csv")
+            Path(source).parent.mkdir(parents=True, exist_ok=True)
+            load_pcap(args.input, idle_timeout=args.idle_timeout).to_csv(source, index=False)
+        raw = pd.read_csv(source)
+        predicted = predict_flows(args.model, load_flow_csv(source))
+        summary = run_schedule(predicted, raw, args.output_dir, args.bandwidth_mbps,
+                               args.arrival, args.window_s)
+        print(json.dumps({k: summary[k] for k in ("bandwidth_mbps", "arrival", "size_source", "flows")}, indent=2))
+        for p in summary["policies"]:
+            print(f"{p['policy']:16} mean={p['mean_latency_ms']:.1f}ms p95={p['p95_latency_ms']:.1f}ms "
+                  f"deadline_miss={p['deadline_miss_rate']:.1%}")
 
 
 if __name__ == "__main__":
     main()
-

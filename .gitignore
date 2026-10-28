@@ -16,3 +16,8 @@ htmlcov/
 data/demo_*.csv
 outputs/*
 !outputs/.gitkeep
+
+data/
+outputs*/
+*.joblib
+*.keras
